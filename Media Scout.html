@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediaScout — Free Media Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1416;
+    --surface:#161e21;
+    --surface2:#1c262a;
+    --border:#26343a;
+    --text:#e9f1f0;
+    --muted:#84989a;
+    --accent:#49d7c4;
+    --accent-dim:#1f3d3a;
+    --amber:#f0a35c;
+    --danger:#e2685f;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .wrap{max-width:1100px;margin:0 auto;padding:32px 20px 80px;}
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:28px;border-bottom:1px solid var(--border);padding-bottom:22px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:38px;height:38px;border-radius:9px;
+    background:linear-gradient(135deg,var(--accent),#2a8f80);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk';font-weight:700;color:#08211d;font-size:17px;
+    flex-shrink:0;
+  }
+  h1{font-family:'Space Grotesk';font-weight:700;font-size:24px;margin:0;letter-spacing:-0.02em;}
+  .tagline{color:var(--muted);font-size:13px;margin-top:2px;}
+  .status-line{font-size:11px;color:var(--muted);}
+  .status-line .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:18px;}
+  .panel-title{font-family:'Space Grotesk';font-weight:600;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+  .panel-title .chevron{transition:transform 0.2s;font-size:11px;}
+  .panel-title.collapsed .chevron{transform:rotate(-90deg);}
+
+  .key-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+  .key-field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px;}
+  .key-field a{color:var(--accent);text-decoration:none;font-size:10.5px;}
+  .key-field input{
+    width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+    padding:8px 10px;color:var(--text);font-size:12.5px;font-family:'JetBrains Mono';
+  }
+  .key-field input:focus{outline:none;border-color:var(--accent);}
+  .key-status{font-size:10.5px;margin-top:4px;font-family:'JetBrains Mono';}
+  .key-status.ok{color:var(--accent);}
+  .key-status.bad{color:var(--danger);}
+  .save-row{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  .save-row button{
+    background:var(--accent);color:#08211d;border:none;border-radius:7px;
+    padding:8px 16px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:'Inter';
+  }
+  .save-row button.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  .save-row button:hover{opacity:0.9;}
+  .save-note{font-size:11px;color:var(--muted);}
+
+  .search-row{display:flex;gap:10px;margin-bottom:14px;}
+  .search-row input{
+    flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:9px;
+    padding:14px 16px;color:var(--text);font-size:15px;font-family:'Inter';
+  }
+  .search-row input:focus{outline:none;border-color:var(--accent);}
+  .search-row button{
+    background:var(--accent);color:#08211d;border:none;border-radius:9px;
+    padding:0 26px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Space Grotesk';
+  }
+  .search-row button:disabled{opacity:0.5;cursor:default;}
+
+  .source-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+  .chip{
+    display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);
+    border-radius:999px;padding:6px 13px 6px 10px;font-size:12px;cursor:pointer;user-select:none;
+    color:var(--muted);transition:all .15s;
+  }
+  .chip.active{border-color:var(--accent);color:var(--text);background:var(--accent-dim);}
+  .chip input{display:none;}
+  .chip .grp{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-left:2px;}
+
+  .hint{font-size:12px;color:var(--muted);line-height:1.6;}
+  .hint b{color:var(--text);}
+
+  .results-meta{display:flex;justify-content:space-between;align-items:center;margin:26px 0 14px;flex-wrap:wrap;gap:8px;}
+  .results-meta h2{font-family:'Space Grotesk';font-size:14px;margin:0;color:var(--muted);font-weight:600;letter-spacing:.03em;text-transform:uppercase;}
+  .results-count{font-size:12px;color:var(--muted);}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+    display:flex;flex-direction:column;transition:border-color .15s, transform .15s;position:relative;
+  }
+  .card:hover{border-color:var(--accent);transform:translateY(-2px);}
+  .thumb-wrap{position:relative;background:#0a0f11;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+  .badge{
+    position:absolute;top:8px;left:8px;background:rgba(10,15,17,0.82);backdrop-filter:blur(3px);
+    border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:10px;font-family:'JetBrains Mono';
+    color:var(--accent);letter-spacing:.02em;
+  }
+  .type-badge{
+    position:absolute;top:8px;right:8px;background:rgba(10,15,17,0.82);border:1px solid var(--border);
+    border-radius:6px;padding:3px 7px;font-size:10px;color:var(--muted);
+  }
+  .card-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1;}
+  .credit{font-size:11px;color:var(--muted);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .license-note{font-size:10px;color:var(--amber);font-family:'JetBrains Mono';}
+  .card-actions{display:flex;gap:6px;margin-top:auto;}
+  .card-actions button, .card-actions a{
+    flex:1;text-align:center;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+    border-radius:6px;padding:7px 6px;font-size:11.5px;cursor:pointer;text-decoration:none;font-family:'Inter';font-weight:500;
+    transition:background .15s;
+  }
+  .card-actions button:hover, .card-actions a:hover{background:var(--accent-dim);border-color:var(--accent);}
+  .card-actions .primary{background:var(--accent);color:#08211d;border-color:var(--accent);font-weight:600;}
+  .card-actions .primary:hover{opacity:0.9;background:var(--accent);}
+
+  .empty, .loading{
+    text-align:center;padding:60px 20px;color:var(--muted);font-size:13px;
+  }
+  .loading .dots span{animation:blink 1.2s infinite;}
+  .loading .dots span:nth-child(2){animation-delay:.2s;}
+  .loading .dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{0%,80%,100%{opacity:.2;}40%{opacity:1;}}
+
+  .error-list{border:1px solid var(--danger);background:rgba(226,104,95,0.08);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;}
+  .error-list h3{margin:0 0 8px;font-size:12.5px;color:var(--danger);font-family:'Space Grotesk';}
+  .error-list div{font-size:12px;color:var(--text);font-family:'JetBrains Mono';margin-bottom:4px;line-height:1.5;}
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+    background:var(--surface2);border:1px solid var(--accent);color:var(--text);
+    padding:10px 18px;border-radius:8px;font-size:12.5px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;max-width:80vw;
+  }
+  .toast.show{opacity:1;}
+
+  footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--border);color:var(--muted);font-size:11px;line-height:1.7;}
+  footer a{color:var(--accent);}
+
+  @media(max-width:560px){
+    .search-row{flex-direction:column;}
+    .search-row button{padding:12px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">MS</div>
+      <div>
+        <h1>MediaScout</h1>
+        <div class="tagline">Free GIFs (Giphy) + free photos &amp; video (Pexels, Pixabay), one search box</div>
+      </div>
+    </div>
+    <div class="status-line"><span class="dot"></span><span id="statusText" class="mono">idle</span></div>
+  </header>
+
+  <div class="panel">
+    <h3 class="panel-title" id="settingsToggle">
+      <span>API Keys</span>
+      <span class="chevron">▾</span>
+    </h3>
+    <div id="settingsBody">
+      <div class="key-grid">
+        <div class="key-field">
+          <label>Giphy — <a href="https://developers.giphy.com/" target="_blank">get free key ↗</a></label>
+          <input type="text" id="key_giphy" placeholder="Giphy API key" autocomplete="off" spellcheck="false">
+          <div class="key-status" id="status_giphy"></div>
+        </div>
+        <div class="key-field">
+          <label>Pexels — <a href="https://www.pexels.com/api/" target="_blank">get free key ↗</a></label>
+          <input type="text" id="key_pexels" placeholder="Pexels API key" autocomplete="off" spellcheck="false">
+          <div class="key-status" id="status_pexels"></div>
+        </div>
+        <div class="key-field">
+          <label>Pixabay — <a href="https://pixabay.com/api/docs/" target="_blank">get free key ↗</a></label>
+          <input type="text" id="key_pixabay" placeholder="Pixabay API key" autocomplete="off" spellcheck="false">
+          <div class="key-status" id="status_pixabay"></div>
+        </div>
+      </div>
+      <div class="save-row">
+        <button id="saveKeysBtn">Save keys</button>
+        <button id="testKeysBtn" class="secondary">Test keys</button>
+        <span class="save-note">Keys are saved locally so you don't re-enter them.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="Search — e.g. &quot;golden retriever&quot;, &quot;monday mood&quot;, &quot;city skyline&quot;" />
+      <button id="searchBtn">Search</button>
+    </div>
+    <div class="source-chips" id="sourceChips"></div>
+    <div class="hint">Giphy = GIFs. Pexels &amp; Pixabay = free stock photos and video, reusable under their own free licenses. Nothing is scraped — every result comes straight from each service's own free API.</div>
+  </div>
+
+  <div id="errorArea"></div>
+
+  <div class="results-meta">
+    <h2>Results</h2>
+    <span class="results-count" id="resultsCount"></span>
+  </div>
+  <div id="resultsArea">
+    <div class="empty">Enter a search term above to pull results.</div>
+  </div>
+
+  <footer>
+    Sources: Giphy (GIFs) · Pexels (photos + video, Pexels License).
+    Downloads and links point directly to the original host — nothing is re-uploaded or cached by this app.
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SOURCES = [
+  {id:'giphy', label:'GIFs', group:'Giphy', default:true},
+  {id:'pexels_photo', label:'Photos', group:'Pexels', default:true},
+  {id:'pexels_video', label:'Video', group:'Pexels', default:false},
+  {id:'pixabay_photo', label:'Photos', group:'Pixabay', default:true},
+  {id:'pixabay_video', label:'Video', group:'Pixabay', default:true},
+];
+
+let keys = {};
+let activeSources = new Set(SOURCES.filter(s=>s.default).map(s=>s.id));
+
+function setStatus(t){ document.getElementById('statusText').textContent = t; }
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2600);
+}
+function showErrors(list){
+  const area = document.getElementById('errorArea');
+  if(!list || list.length === 0){ area.innerHTML=''; return; }
+  area.innerHTML = `<div class="error-list"><h3>Something didn't work</h3>${list.map(e=>`<div>${e}</div>`).join('')}</div>`;
+}
+
+const hasAppStorage = () => (typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function');
+const hasLocalStorage = () => { try{ localStorage.setItem('__ms_test','1'); localStorage.removeItem('__ms_test'); return true; }catch(e){ return false; } };
+
+async function loadKeys(){
+  try{
+    let raw = null;
+    if(hasAppStorage()){
+      const r = await window.storage.get('mediascout_keys');
+      raw = r && r.value;
+    } else if(hasLocalStorage()){
+      raw = localStorage.getItem('mediascout_keys');
+    }
+    if(raw){
+      keys = JSON.parse(raw);
+      Object.keys(keys).forEach(k=>{
+        const el = document.getElementById(k);
+        if(el) el.value = keys[k];
+      });
+      showToast('Loaded saved keys');
+    }
+  }catch(e){ /* no keys saved yet */ }
+}
+
+async function saveKeys(){
+  keys = {};
+  ['key_giphy','key_pexels','key_pixabay'].forEach(id=>{
+    keys[id] = document.getElementById(id).value.trim();
+  });
+  const payload = JSON.stringify(keys);
+  try{
+    if(hasAppStorage()){
+      await window.storage.set('mediascout_keys', payload);
+    } else if(hasLocalStorage()){
+      localStorage.setItem('mediascout_keys', payload);
+    } else {
+      throw new Error('no storage available');
+    }
+    showToast('Keys saved for next time');
+  }catch(e){
+    showToast('Could not save keys (they still work for this session)');
+  }
+}
+
+async function testKeys(){
+  keys.key_giphy = document.getElementById('key_giphy').value.trim();
+  keys.key_pexels = document.getElementById('key_pexels').value.trim();
+  const giphyStatus = document.getElementById('status_giphy');
+  const pexelsStatus = document.getElementById('status_pexels');
+  giphyStatus.textContent = 'testing…'; giphyStatus.className = 'key-status';
+  pexelsStatus.textContent = 'testing…'; pexelsStatus.className = 'key-status';
+
+  if(!keys.key_giphy){
+    giphyStatus.textContent = 'no key entered'; giphyStatus.className = 'key-status bad';
+  } else {
+    try{
+      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(keys.key_giphy)}&q=test&limit=1`);
+      const body = await res.json().catch(()=>({}));
+      if(res.ok){
+        giphyStatus.textContent = 'key works ✓'; giphyStatus.className = 'key-status ok';
+      } else {
+        giphyStatus.textContent = `error ${res.status}: ${body?.meta?.msg || res.statusText}`; giphyStatus.className = 'key-status bad';
+      }
+    }catch(e){
+      giphyStatus.textContent = `network error: ${e.message}`; giphyStatus.className = 'key-status bad';
+    }
+  }
+
+  if(!keys.key_pexels){
+    pexelsStatus.textContent = 'no key entered'; pexelsStatus.className = 'key-status bad';
+  } else {
+    try{
+      const res = await fetch(`https://api.pexels.com/v1/search?query=test&per_page=1`, {headers:{Authorization:keys.key_pexels}});
+      const body = await res.json().catch(()=>({}));
+      if(res.ok){
+        pexelsStatus.textContent = 'key works ✓'; pexelsStatus.className = 'key-status ok';
+      } else {
+        pexelsStatus.textContent = `error ${res.status}: ${body?.error || res.statusText}`; pexelsStatus.className = 'key-status bad';
+      }
+    }catch(e){
+      pexelsStatus.textContent = `network error: ${e.message}`; pexelsStatus.className = 'key-status bad';
+    }
+  }
+
+  keys.key_pixabay = document.getElementById('key_pixabay').value.trim();
+  const pixabayStatus = document.getElementById('status_pixabay');
+  pixabayStatus.textContent = 'testing…'; pixabayStatus.className = 'key-status';
+  if(!keys.key_pixabay){
+    pixabayStatus.textContent = 'no key entered'; pixabayStatus.className = 'key-status bad';
+  } else {
+    try{
+      const res = await fetch(`https://pixabay.com/api/?key=${encodeURIComponent(keys.key_pixabay)}&q=test&per_page=3`);
+      const body = await res.json().catch(()=>({}));
+      if(res.ok){
+        pixabayStatus.textContent = 'key works ✓'; pixabayStatus.className = 'key-status ok';
+      } else {
+        pixabayStatus.textContent = `error ${res.status}: ${body?.error || res.statusText}`; pixabayStatus.className = 'key-status bad';
+      }
+    }catch(e){
+      pixabayStatus.textContent = `network error: ${e.message}`; pixabayStatus.className = 'key-status bad';
+    }
+  }
+}
+
+function renderChips(){
+  const wrap = document.getElementById('sourceChips');
+  wrap.innerHTML = '';
+  SOURCES.forEach(s=>{
+    const chip = document.createElement('label');
+    chip.className = 'chip' + (activeSources.has(s.id) ? ' active' : '');
+    chip.innerHTML = `<input type="checkbox" ${activeSources.has(s.id)?'checked':''}/> ${s.label} <span class="grp">${s.group}</span>`;
+    chip.querySelector('input').addEventListener('change', (e)=>{
+      if(e.target.checked) activeSources.add(s.id); else activeSources.delete(s.id);
+      chip.classList.toggle('active', e.target.checked);
+    });
+    wrap.appendChild(chip);
+  });
+}
+
+document.getElementById('settingsToggle').addEventListener('click', ()=>{
+  const body = document.getElementById('settingsBody');
+  const title = document.getElementById('settingsToggle');
+  const collapsed = body.style.display === 'none';
+  body.style.display = collapsed ? 'block' : 'none';
+  title.classList.toggle('collapsed', !collapsed);
+});
+document.getElementById('saveKeysBtn').addEventListener('click', saveKeys);
+document.getElementById('testKeysBtn').addEventListener('click', testKeys);
+
+// ---- Fetchers: return array of results, or throw a descriptive Error ----
+
+async function fetchGiphy(q){
+  const key = keys.key_giphy;
+  if(!key) throw new Error('Giphy: no API key entered');
+  const url = `https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(key)}&q=${encodeURIComponent(q)}&limit=12&rating=g`;
+  const res = await fetch(url);
+  const body = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(`Giphy: ${res.status} — ${body?.meta?.msg || res.statusText}`);
+  return (body.data||[]).map(g => ({
+    source:'Giphy', type:'gif',
+    thumb: g.images.fixed_width.url,
+    full: g.images.original.url,
+    credit: g.title || 'Untitled GIF',
+    license: 'Free (Giphy)',
+    sourceUrl: g.url
+  }));
+}
+
+async function fetchPexelsPhoto(q){
+  const key = keys.key_pexels;
+  if(!key) throw new Error('Pexels Photos: no API key entered');
+  const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=12`;
+  const res = await fetch(url, {headers:{Authorization:key}});
+  const body = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(`Pexels Photos: ${res.status} — ${body?.error || res.statusText}`);
+  return (body.photos||[]).map(p => ({
+    source:'Pexels', type:'photo',
+    thumb: p.src.medium,
+    full: p.src.original,
+    credit: 'Photo by ' + p.photographer,
+    license: 'Free (Pexels License)',
+    sourceUrl: p.url
+  }));
+}
+
+async function fetchPexelsVideo(q){
+  const key = keys.key_pexels;
+  if(!key) throw new Error('Pexels Video: no API key entered');
+  const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&per_page=12`;
+  const res = await fetch(url, {headers:{Authorization:key}});
+  const body = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(`Pexels Video: ${res.status} — ${body?.error || res.statusText}`);
+  return (body.videos||[]).map(v => {
+    const file = (v.video_files||[]).sort((a,b)=>(a.width||0)-(b.width||0))[0];
+    return {
+      source:'Pexels', type:'video',
+      thumb: v.image,
+      full: file ? file.link : v.url,
+      credit: 'Video by ' + (v.user?.name || 'Pexels'),
+      license: 'Free (Pexels License)',
+      sourceUrl: v.url
+    };
+  });
+}
+
+async function fetchPixabayPhoto(q){
+  const key = keys.key_pixabay;
+  if(!key) throw new Error('Pixabay Photos: no API key entered');
+  const url = `https://pixabay.com/api/?key=${encodeURIComponent(key)}&q=${encodeURIComponent(q)}&per_page=12&safesearch=true`;
+  const res = await fetch(url);
+  const body = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(`Pixabay Photos: ${res.status} — ${body?.error || res.statusText}`);
+  return (body.hits||[]).map(p => ({
+    source:'Pixabay', type:'photo',
+    thumb: p.webformatURL,
+    full: p.largeImageURL,
+    credit: 'By ' + p.user,
+    license: 'Free (Pixabay License)',
+    sourceUrl: p.pageURL
+  }));
+}
+
+async function fetchPixabayVideo(q){
+  const key = keys.key_pixabay;
+  if(!key) throw new Error('Pixabay Video: no API key entered');
+  const url = `https://pixabay.com/api/videos/?key=${encodeURIComponent(key)}&q=${encodeURIComponent(q)}&per_page=12&safesearch=true`;
+  const res = await fetch(url);
+  const body = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(`Pixabay Video: ${res.status} — ${body?.error || res.statusText}`);
+  return (body.hits||[]).map(v => ({
+    source:'Pixabay', type:'video',
+    thumb: v.videos?.tiny?.thumbnail || `https://i.vimeocdn.com/video/${v.picture_id}_295x166.jpg`,
+    full: v.videos?.medium?.url || v.videos?.small?.url,
+    credit: 'By ' + v.user,
+    license: 'Free (Pixabay License)',
+    sourceUrl: `https://pixabay.com/videos/id-${v.id}/`
+  }));
+}
+
+const FETCHERS = {
+  giphy: fetchGiphy,
+  pexels_photo: fetchPexelsPhoto,
+  pexels_video: fetchPexelsVideo,
+  pixabay_photo: fetchPixabayPhoto,
+  pixabay_video: fetchPixabayVideo,
+};
+
+async function runSearch(){
+  const q = document.getElementById('searchInput').value.trim();
+  const resultsArea = document.getElementById('resultsArea');
+  const resultsCount = document.getElementById('resultsCount');
+  if(!q){ showToast('Type something to search first'); return; }
+  if(activeSources.size === 0){ showToast('Enable at least one source'); return; }
+
+  setStatus('searching…');
+  showErrors([]);
+  resultsArea.innerHTML = `<div class="loading">Pulling results<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>`;
+  resultsCount.textContent = '';
+
+  const jobs = [...activeSources].map(id =>
+    FETCHERS[id](q).then(r => ({ok:true, data:r})).catch(e => ({ok:false, message: e.message}))
+  );
+  const settled = await Promise.all(jobs);
+
+  let allResults = [];
+  let errors = [];
+  settled.forEach(r => {
+    if(r.ok) allResults = allResults.concat(r.data);
+    else errors.push(r.message);
+  });
+
+  setStatus('idle');
+  showErrors(errors);
+
+  if(allResults.length === 0){
+    resultsArea.innerHTML = `<div class="empty">No results.${errors.length ? '' : ' Try a different term.'}</div>`;
+    resultsCount.textContent = '';
+    return;
+  }
+
+  resultsCount.textContent = `${allResults.length} results`;
+  renderResults(allResults);
+}
+
+function renderResults(items){
+  const area = document.getElementById('resultsArea');
+  area.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const thumbWrap = document.createElement('div');
+    thumbWrap.className = 'thumb-wrap';
+    const img = document.createElement('img');
+    img.src = item.thumb;
+    img.loading = 'lazy';
+    img.alt = item.credit || item.source;
+    thumbWrap.appendChild(img);
+
+    const badge = document.createElement('div');
+    badge.className = 'badge';
+    badge.textContent = item.source;
+    thumbWrap.appendChild(badge);
+
+    const typeBadge = document.createElement('div');
+    typeBadge.className = 'type-badge';
+    typeBadge.textContent = item.type;
+    thumbWrap.appendChild(typeBadge);
+
+    const body = document.createElement('div');
+    body.className = 'card-body';
+
+    const credit = document.createElement('div');
+    credit.className = 'credit';
+    credit.title = item.credit;
+    credit.textContent = item.credit || '';
+
+    const license = document.createElement('div');
+    license.className = 'license-note';
+    license.textContent = item.license;
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    const openBtn = document.createElement('a');
+    openBtn.href = item.full;
+    openBtn.target = '_blank';
+    openBtn.rel = 'noopener';
+    openBtn.textContent = 'Open';
+
+    const dlBtn = document.createElement('button');
+    dlBtn.className = 'primary';
+    dlBtn.textContent = 'Download';
+    dlBtn.addEventListener('click', () => downloadFile(item.full, item.source, item.type));
+
+    const copyBtn = document.createElement('button');
+    copyBtn.textContent = 'Copy link';
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(item.full).then(()=>showToast('Link copied'));
+    });
+
+    actions.appendChild(openBtn);
+    actions.appendChild(dlBtn);
+    actions.appendChild(copyBtn);
+
+    body.appendChild(credit);
+    body.appendChild(license);
+    body.appendChild(actions);
+
+    card.appendChild(thumbWrap);
+    card.appendChild(body);
+    grid.appendChild(card);
+  });
+
+  area.appendChild(grid);
+}
+
+async function downloadFile(url, source, type){
+  showToast('Preparing download…');
+  try{
+    const res = await fetch(url, {mode:'cors'});
+    if(!res.ok) throw new Error('bad response');
+    const blob = await res.blob();
+    const ext = (type === 'video') ? 'mp4' : (type === 'gif') ? 'gif' : 'jpg';
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objUrl;
+    a.download = `${source.toLowerCase()}_${Date.now()}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objUrl);
+    showToast('Downloaded');
+  }catch(e){
+    showToast('Direct download blocked — opening file instead');
+    window.open(url, '_blank');
+  }
+}
+
+document.getElementById('searchBtn').addEventListener('click', runSearch);
+document.getElementById('searchInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') runSearch(); });
+
+renderChips();
+loadKeys();
+</script>
+</body>
+</html>
